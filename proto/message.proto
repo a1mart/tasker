@@ -1,0 +1,610 @@
+syntax = "proto3";
+package example;
+
+// Import common types
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "example/v1;pb";
+
+// =============================================================================
+// DATA MODELS
+// =============================================================================
+
+// Core domain entities
+message Task {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    TaskStatus status = 4;
+    TaskPriority priority = 5;
+    repeated string tags = 6;
+    string assigned_to = 7;
+    google.protobuf.Timestamp created_at = 8;
+    google.protobuf.Timestamp updated_at = 9;
+    google.protobuf.Timestamp due_date = 10;
+    TaskMetrics metrics = 11;
+    repeated TaskComment comments = 12;
+    repeated TaskAttachment attachments = 13;
+}
+
+message TaskComment {
+    string id = 1;
+    string task_id = 2;
+    string author_id = 3;
+    string content = 4;
+    google.protobuf.Timestamp created_at = 5;
+}
+
+message TaskMetrics {
+    int32 estimated_hours = 1;
+    int32 actual_hours = 2;
+    double completion_percentage = 3;
+}
+
+message TaskAttachment {
+    string id = 1;
+    string filename = 2;
+    string content_type = 3;
+    uint64 file_size = 4;
+    google.protobuf.Timestamp uploaded_at = 5;
+    string uploaded_by = 6;
+    string url = 7;
+}
+
+message User {
+    string id = 1;
+    string username = 2;
+    string email = 3;
+    string full_name = 4;
+    UserRole role = 5;
+    repeated string permissions = 6;
+    google.protobuf.Timestamp last_login = 7;
+    bool is_active = 8;
+    UserStatus status = 9;
+    google.protobuf.Timestamp created_at = 10;
+    google.protobuf.Timestamp updated_at = 11;
+    UserPreferences preferences = 12;
+    UserProfile profile = 13;
+}
+
+message UserPreferences {
+    string theme = 1;
+    string language = 2;
+    string timezone = 3;
+    bool notifications_enabled = 4;
+    bool email_notifications = 5;
+}
+
+message UserProfile {
+    string avatar_url = 1;
+    string bio = 2;
+    string department = 3;
+    string phone = 4;
+    string location = 5;
+}
+
+// Enums for better type safety
+enum TaskStatus {
+    TASK_STATUS_UNSPECIFIED = 0;
+    TASK_STATUS_TODO = 1;
+    TASK_STATUS_IN_PROGRESS = 2;
+    TASK_STATUS_REVIEW = 3;
+    TASK_STATUS_DONE = 4;
+    TASK_STATUS_CANCELLED = 5;
+}
+
+enum TaskPriority {
+    TASK_PRIORITY_UNSPECIFIED = 0;
+    TASK_PRIORITY_LOW = 1;
+    TASK_PRIORITY_MEDIUM = 2;
+    TASK_PRIORITY_HIGH = 3;
+    TASK_PRIORITY_CRITICAL = 4;
+}
+
+enum UserRole {
+    USER_ROLE_UNSPECIFIED = 0;
+    USER_ROLE_VIEWER = 1;
+    USER_ROLE_MEMBER = 2;
+    USER_ROLE_ADMIN = 3;
+}
+
+enum UserStatus {
+    USER_STATUS_UNSPECIFIED = 0;
+    USER_STATUS_ACTIVE = 1;
+    USER_STATUS_INACTIVE = 2;
+    USER_STATUS_SUSPENDED = 3;
+}
+
+// =============================================================================
+// TASK REQUEST/RESPONSE MESSAGES
+// =============================================================================
+
+// Standard CRUD operations
+message CreateTaskRequest {
+    string title = 1;
+    string description = 2;
+    TaskPriority priority = 3;
+    repeated string tags = 4;
+    string assigned_to = 5;
+    google.protobuf.Timestamp due_date = 6;
+}
+
+message CreateTaskResponse {
+    Task task = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+message GetTaskRequest {
+    string id = 1;
+    bool include_comments = 2;
+}
+
+message GetTaskResponse {
+    Task task = 1;
+    bool found = 2;
+}
+
+message UpdateTaskRequest {
+    string id = 1;
+    Task task = 2;
+    repeated string update_mask = 3; // Field mask for partial updates
+}
+
+message UpdateTaskResponse {
+    Task task = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+message DeleteTaskRequest {
+    string id = 1;
+    bool force = 2; // Hard delete vs soft delete
+}
+
+message DeleteTaskResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+// List/Query operations with pagination and filtering
+message ListTasksRequest {
+    int32 page_size = 1;
+    string page_token = 2;
+    TaskFilter filter = 3;
+    TaskSort sort = 4;
+}
+
+message ListTasksResponse {
+    repeated Task tasks = 1;
+    string next_page_token = 2;
+    int32 total_count = 3;
+}
+
+message TaskFilter {
+    repeated TaskStatus status = 1;
+    repeated TaskPriority priority = 2;
+    repeated string tags = 3;
+    string assigned_to = 4;
+    google.protobuf.Timestamp due_before = 5;
+    google.protobuf.Timestamp due_after = 6;
+    string search_query = 7;
+}
+
+message TaskSort {
+    TaskSortField field = 1;
+    SortDirection direction = 2;
+}
+
+enum TaskSortField {
+    TASK_SORT_FIELD_UNSPECIFIED = 0;
+    TASK_SORT_FIELD_CREATED_AT = 1;
+    TASK_SORT_FIELD_UPDATED_AT = 2;
+    TASK_SORT_FIELD_DUE_DATE = 3;
+    TASK_SORT_FIELD_PRIORITY = 4;
+    TASK_SORT_FIELD_TITLE = 5;
+}
+
+enum SortDirection {
+    SORT_DIRECTION_UNSPECIFIED = 0;
+    SORT_DIRECTION_ASC = 1;
+    SORT_DIRECTION_DESC = 2;
+}
+
+// Bulk operations
+message BulkUpdateTasksRequest {
+    repeated string task_ids = 1;
+    TaskStatus status = 2;
+    string assigned_to = 3;
+    repeated string tags_to_add = 4;
+    repeated string tags_to_remove = 5;
+}
+
+message BulkUpdateTasksResponse {
+    int32 updated_count = 1;
+    repeated string failed_ids = 2;
+    string message = 3;
+}
+
+// Search operations
+message SearchTasksRequest {
+    string query = 1;
+    TaskFilter filters = 2;
+    int32 page_size = 3;
+    string page_token = 4;
+}
+
+message SearchTasksResponse {
+    repeated Task tasks = 1;
+    uint32 total_count = 2;
+    uint32 search_time_ms = 3;
+}
+
+// Real-time streaming messages
+message TaskEvent {
+    string event_id = 1;
+    TaskEventType event_type = 2;
+    Task task = 3;
+    string user_id = 4;
+    google.protobuf.Timestamp timestamp = 5;
+    map<string, string> metadata = 6;
+}
+
+enum TaskEventType {
+    TASK_EVENT_TYPE_UNSPECIFIED = 0;
+    TASK_EVENT_TYPE_CREATED = 1;
+    TASK_EVENT_TYPE_UPDATED = 2;
+    TASK_EVENT_TYPE_DELETED = 3;
+    TASK_EVENT_TYPE_ASSIGNED = 4;
+    TASK_EVENT_TYPE_COMPLETED = 5;
+    TASK_EVENT_TYPE_COMMENTED = 6;
+}
+
+message StreamTaskEventsRequest {
+    repeated string task_ids = 1; // Empty = all tasks
+    repeated TaskEventType event_types = 2; // Empty = all events
+    string user_id = 3; // Filter by user
+}
+
+// Analytics and reporting
+message GetTaskAnalyticsRequest {
+    google.protobuf.Timestamp start_date = 1;
+    google.protobuf.Timestamp end_date = 2;
+    repeated string user_ids = 3;
+    string group_by = 4; // "status", "user", "priority", "day", "week"
+}
+
+message GetTaskAnalyticsResponse {
+    TaskAnalytics analytics = 1;
+    google.protobuf.Timestamp generated_at = 2;
+}
+
+message TaskAnalytics {
+    uint32 total_tasks = 1;
+    uint32 completed_tasks = 2;
+    uint32 in_progress_tasks = 3;
+    uint32 todo_tasks = 4;
+    float completion_rate = 5;
+    float average_completion_time_hours = 6;
+    uint32 overdue_tasks = 7;
+    map<int32, uint32> tasks_by_priority = 8;
+    uint32 tasks_created_this_week = 9;
+    uint32 tasks_completed_this_week = 10;
+}
+
+message TaskMetricPoint {
+    string label = 1;
+    int32 count = 2;
+    double value = 3;
+    google.protobuf.Timestamp timestamp = 4;
+}
+
+message TaskSummary {
+    int32 total_tasks = 1;
+    int32 completed_tasks = 2;
+    double completion_rate = 3;
+    double average_completion_time_hours = 4;
+    int32 overdue_tasks = 5;
+}
+
+// File upload/attachment support
+message UploadTaskAttachmentRequest {
+    string task_id = 1;
+    bytes chunk = 2;
+    string filename = 3;
+    string content_type = 4;
+    int64 total_size = 5;
+    int32 chunk_index = 6;
+    bool is_final_chunk = 7;
+}
+
+message UploadTaskAttachmentResponse {
+    string attachment_id = 1;
+    string filename = 2;
+    uint64 file_size = 3;
+    bool success = 4;
+    string message = 5;
+}
+
+// =============================================================================
+// USER REQUEST/RESPONSE MESSAGES
+// =============================================================================
+
+message CreateUserRequest {
+    string username = 1;
+    string email = 2;
+    string password = 3;
+    string full_name = 4;
+    UserRole role = 5;
+}
+
+message CreateUserResponse {
+    User user = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+message GetUserRequest {
+    string id = 1;
+}
+
+message GetUserResponse {
+    User user = 1;
+    bool found = 2;
+}
+
+message ListUsersRequest {
+    int32 page_size = 1;
+    string page_token = 2;
+    UserRole role = 3;
+    bool active_only = 4;
+}
+
+message ListUsersResponse {
+    repeated User users = 1;
+    string next_page_token = 2;
+    int32 total_count = 3;
+}
+
+message UpdateUserRequest {
+    string id = 1;
+    User user = 2;
+}
+
+message UpdateUserResponse {
+    User user = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+message DeleteUserRequest {
+    string id = 1;
+}
+
+message DeleteUserResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message AuthenticateUserRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message AuthenticateUserResponse {
+    User user = 1;
+    string token = 2;
+    bool success = 3;
+    string message = 4;
+    google.protobuf.Timestamp expires_at = 5;
+}
+
+message GetUserTasksRequest {
+    string user_id = 1;
+    int32 page_size = 2;
+    string page_token = 3;
+}
+
+message GetUserTasksResponse {
+    repeated Task tasks = 1;
+    string next_page_token = 2;
+    int32 total_count = 3;
+}
+
+message UpdateUserPreferencesRequest {
+    string user_id = 1;
+    UserPreferences preferences = 2;
+}
+
+message UpdateUserPreferencesResponse {
+    UserPreferences preferences = 1;
+    bool success = 2;
+    string message = 3;
+}
+
+// Legacy login messages (keeping for backward compatibility)
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    string access_token = 1;
+    string refresh_token = 2;
+    User user = 3;
+    google.protobuf.Timestamp expires_at = 4;
+}
+
+message RefreshTokenRequest {
+    string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+    string access_token = 1;
+    google.protobuf.Timestamp expires_at = 2;
+}
+
+message LogoutRequest {
+    string access_token = 1;
+}
+
+// =============================================================================
+// SERVICE DEFINITIONS
+// =============================================================================
+
+
+service TaskService {
+    // Standard CRUD operations
+
+    rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse) {
+        option (google.api.http) = {
+            post: "/v1/tasks"
+            body: "*"
+        };
+    }
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {
+        option (google.api.http) = {
+            get: "/v1/tasks/{id}"
+        };
+    }
+    rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse) {
+        option (google.api.http) = {
+            patch: "/v1/tasks/{id}"
+            body: "*"
+        };
+    }
+    rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse) {
+        option (google.api.http) = {
+            delete: "/v1/tasks/{id}"
+        };
+    }
+    
+    // List and search
+
+    rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
+        option (google.api.http) = {
+            get: "/v1/tasks"
+            // You can add query params if you want, but grpc-gateway will map the message fields
+        };
+    }
+    rpc SearchTasks(SearchTasksRequest) returns (SearchTasksResponse) {
+        option (google.api.http) = {
+            get: "/v1/tasks/search"
+        };
+    }
+    
+    // Bulk operations
+
+    rpc BulkUpdateTasks(BulkUpdateTasksRequest) returns (BulkUpdateTasksResponse) {
+        option (google.api.http) = {
+            post: "/v1/tasks/bulk_update"
+            body: "*"
+        };
+    }
+    
+    // Real-time streaming - not mapped to HTTP (grpc only)
+
+    rpc StreamTaskEvents(StreamTaskEventsRequest) returns (stream TaskEvent);
+    rpc ImportTasks(stream CreateTaskRequest) returns (stream CreateTaskResponse);
+    rpc CollaborateOnTasks(stream TaskEvent) returns (stream TaskEvent);
+    rpc UploadTaskAttachment(stream UploadTaskAttachmentRequest) returns (UploadTaskAttachmentResponse);
+    
+    // Analytics
+
+    rpc GetTaskAnalytics(GetTaskAnalyticsRequest) returns (GetTaskAnalyticsResponse) {
+        option (google.api.http) = {
+            get: "/v1/tasks/analytics"
+        };
+    }
+    
+    // Health check
+
+    rpc Health(google.protobuf.Empty) returns (HealthResponse) {
+        option (google.api.http) = {
+            get: "/v1/health"
+        };
+    }
+}
+
+message HealthResponse {
+    bool healthy = 1;
+    string version = 2;
+    google.protobuf.Timestamp timestamp = 3;
+}
+
+// =============================================================================
+// USER MANAGEMENT SERVICE
+// =============================================================================
+
+service UserService {
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/users"
+            body: "*"
+        };
+    }
+    rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/{id}"
+        };
+    }
+    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+        option (google.api.http) = {
+            get: "/v1/users"
+        };
+    }
+    rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+        option (google.api.http) = {
+            patch: "/v1/users/{id}"
+            body: "*"
+        };
+    }
+    rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+        option (google.api.http) = {
+            delete: "/v1/users/{id}"
+        };
+    }
+    
+    // Authentication
+
+    rpc Login(LoginRequest) returns (LoginResponse) {
+        option (google.api.http) = {
+            post: "/v1/auth/login"
+            body: "*"
+        };
+    }
+    rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+        option (google.api.http) = {
+            post: "/v1/auth/refresh"
+            body: "*"
+        };
+    }
+    rpc Logout(LogoutRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/auth/logout"
+            body: "*"
+        };
+    }
+    rpc AuthenticateUser(AuthenticateUserRequest) returns (AuthenticateUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/auth/authenticate"
+            body: "*"
+        };
+    }
+    
+    // User-specific operations
+
+    rpc GetUserTasks(GetUserTasksRequest) returns (GetUserTasksResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/{user_id}/tasks"
+        };
+    }
+    rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
+        option (google.api.http) = {
+            patch: "/v1/users/{user_id}/preferences"
+            body: "*"
+        };
+    }
+}

@@ -1,0 +1,77 @@
+# =========================
+# Root / General
+# =========================
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Frontend (Next.js / Node)
+# =========================
+# Node modules
+frontend/node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+
+# Environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Yarn / pnpm
+frontend/.pnp.*
+frontend/.yarn/*
+frontend/.cache/
+
+# Misc
+frontend/dist/
+frontend/build/
+frontend/.parcel-cache
+
+# =========================
+# Backend (Rust)
+# =========================
+backend/target/
+backend/debug/
+backend/release/
+backend/.cargo/
+backend/Cargo.lock
+
+# =========================
+# Protobuf / generated files
+# =========================
+proto/**/*.pb.rs
+proto/**/*.pb.go
+proto/**/*.pb.ts
+proto/**/*.connect.ts
+proto/**/*.grpc.ts
+proto/**/*.d.ts
+
+# =========================
+# Coverage / reports
+# =========================
+coverage/
+*.lcov
+*.prof
+*.profraw
+
+# =========================
+# Misc
+# =========================
+*.bak
+*.tmp
