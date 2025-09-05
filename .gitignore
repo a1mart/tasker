@@ -51,6 +51,7 @@ backend/debug/
 backend/release/
 backend/.cargo/
 backend/Cargo.lock
+backend/data/
 
 # =========================
 # Protobuf / generated files
@@ -75,3 +76,4 @@ coverage/
 # =========================
 *.bak
 *.tmp
+
