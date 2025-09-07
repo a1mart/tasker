@@ -1,6 +1,6 @@
 # gRPC-Based Task Management Application
 
-![Home](docs/assets/tasks.png)
+![Home](https://raw.githubusercontent.com/a1mart/tasker/main/docs/assets/tasks.png)
 
 Personal task management system to support DevOps and increase productivity.
 
